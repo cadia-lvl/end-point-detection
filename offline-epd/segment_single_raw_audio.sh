@@ -3,11 +3,6 @@
 # Copyright 2020  Reykjavik University (Author: Inga Rún Helgadóttir)
 # Apache 2.0
 
-# Script for segmenting raw audio input
-# Takes in an audio file and returns a kaldi directory containing the following files:
-# segments, wav.scp, spk2utt, utt2spk, feats.scp and more,
-# making the audio ready for further processing, e.g. for ASR
-
 set -o pipefail
 
 stage=0
@@ -15,12 +10,15 @@ cmd=run.pl
 
 . ./path.sh
 . ./cmd.sh
-. ./utils/parse_options.sh || exit 1;
-. ./local/utils.sh
 
-if [ $# -lt 2 ]; then
-    echo "This script segments raw audio input and prepares it"
-    echo "for further processing wiht Kaldi"
+if [ "$1" = "-h" ] || [ $# -lt 2 ]; then
+    echo "This script takes in an audio file and returns a kaldi directory containing the following files:"
+    echo "wav.scp, pointing to the location of the audio files,"
+    echo "utt2spk and spk2utt, which connect speakers and audio files, and the new segment file, which stores the new segment time stamps."
+    echo "The segments are found using energy based voice activity detection, and used when transcribing the audio."
+    echo "The parent directory of this script must contain path.sh and cmd.sh,"
+    echo "a config directory with the files mfcc.conf and vad.conf and a symlink to steps and utils."
+    echo "It is assumed that you are running this within a Kaldi example dir, otherwise change path.sh."
     echo ""
     echo "Usage: $0 [options] <audiofile> <outputdir>"
     echo " e.g.: $0 audio/radXXX.mp3 output/radXXX"
