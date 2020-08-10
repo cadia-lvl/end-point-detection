@@ -1,10 +1,12 @@
+import os
+import sys
+import argparse
+import contextlib
+import logging
 import multiprocessing
 from multiprocessing import Queue
 import speech_recognition as sr
-import contextlib
-import os
-import sys
-import logging
+
 
 # Get rid of some of the microphone error messages on linux computers
 @contextlib.contextmanager
@@ -22,12 +24,12 @@ def ignore_stderr():
 
 
 def record_audio(m, r, q):
-    '''Listen to audio, chunk it down and put in a queue'''
+    """Listen to audio, chunk it down and put in a queue"""
     try:
         while True:
             with ignore_stderr() as n, m as source:
                 try:
-                    audio = r.listen(source, timeout=.1)
+                    audio = r.listen(source, timeout=0.1)
                     q.put(audio)
                 except sr.WaitTimeoutError:
                     logging.info("Timeout")
@@ -37,13 +39,13 @@ def record_audio(m, r, q):
 
 
 def recognize_audio(r, q):
-    '''Transcribe the audio chunks, using the chosen ASR. Here the google ASR should be switched out for an Icelandic one.'''
-    #i=0
+    """Transcribe the audio chunks, using the chosen ASR. Here the google ASR should be switched out for an Icelandic one."""
+    # i=0
     while True:
         try:
-            #i=i+1
+            # i=i+1
             audio = q.get()
-            #with open(f"audio_file_{i}.wav", "wb") as file:
+            # with open(f"audio_file_{i}.wav", "wb") as file:
             #    file.write(audio.get_wav_data())
             value = r.recognize_google(audio)
             print(value)
@@ -51,17 +53,27 @@ def recognize_audio(r, q):
             print("Oops! Didn't catch that")
         except sr.RequestError as e:
             print(
-                f"Uh oh! Couldn't request results from Google Speech Recognition service; {e}")
+                f"Uh oh! Couldn't request results from Google Speech Recognition service; {e}"
+            )
         except KeyboardInterrupt:
             pass
 
 
 if __name__ == "__main__":
-    
-    logging.basicConfig(filename='main_multiproc.log', level=logging.DEBUG)
+
+    logging.basicConfig(filename="main_multiproc.log", level=logging.INFO)
+
+    parser = argparse.ArgumentParser(
+        description="""Find endpoints in a continuous audio stream and simultaneously transcribe the audio chunks. 
+        Works with Uberi's Speech Recognition package. The ASR should be switched out for an Icelandic one in the future.
+        Usage: python run.py"""
+    )
+    args = parser.parse_args()
+
     r = sr.Recognizer()
-    m = sr.Microphone() # One can denote which mickrophone to use with device_index after listing the ones available
-    
+    m = (
+        sr.Microphone()
+    )  # One can denote which mickrophone to use with device_index after listing the ones available
 
     print("A moment of silence, please...")
     with ignore_stderr() as n, m as source:
@@ -73,5 +85,5 @@ if __name__ == "__main__":
     q = Queue()
     p1 = multiprocessing.Process(name="p1", target=recognize_audio, args=(r, q,))
     p1.start()
-    record_audio(m,r,q)
+    record_audio(m, r, q)
     p1.join()
